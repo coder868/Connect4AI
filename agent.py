@@ -1,9 +1,13 @@
 import torch
 import random as rand
 import numpy as np
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
 from collections import deque
 from gameboard import Gameboard
 from model import QNet, QTrainer
+import time
 
 
 MAX_MEMORY = 1000
@@ -12,12 +16,11 @@ LR = 0.01
 
 class Agent:
     def __init__(self):
-        self.n_games
+        self.n_games = 0
         self.epsilon = 1.0
         self.gamma = 0.95
-        self.player
         self.memory = deque(maxlen = MAX_MEMORY) #pop_left if too many
-        self.model = QNet(1, 64, 64, 7) #TODO
+        self.model = QNet(43, 64, 64, 7) #TODO
         self.trainer = QTrainer(self.model, lr=LR, gamma = self.gamma) #TODO
         #TODO model and trainer
     
@@ -25,34 +28,46 @@ class Agent:
         return board.get_state()
     
     def remember(self, player, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done)) #pop left if MAX_MEMORY is reached
+        self.memory.append((player, state, action, reward, next_state, done)) #pop left if MAX_MEMORY is reached
     
-    def train_long(self, player, state, action, reward, next_state, done):
-        if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE) #returns list of tuples
-        else:
-            mini_sample = self.memory
-        states, actions, rewards, next_states, dones = zip(*mini_sample)
-        self.trainer.train_step(states, actions, rewards, next_states, dones)
+    # def train_long(self, player):
+    #     if len(self.memory) > BATCH_SIZE:
+    #         mini_sample = rand.sample(self.memory, BATCH_SIZE) #returns list of tuples
+    #     else:
+    #         mini_sample = self.memory
+    #     states, actions, rewards, next_states, dones = zip(*mini_sample)
+    #     self.trainer.train_step(player, states, actions, rewards, next_states, dones)
             
     
     def train_short(self, player, state, action, reward, next_state, done):
-        self.trainer.train_step(state, action, reward, next_state, done)
+        self.trainer.train_step(player, state, action, reward, next_state, done)
     
     def get_action(self, player, state):
         #random moves sometimes
         self.epsilon = self.epsilon * 0.995
-        if random.random() < self.epsilon:
-            column = rand.randint(0,6)
+        if rand.random() < self.epsilon:
+            print('rand')
+            action = rand.randint(0,6)
+            return action
         else:
-            state0 = torch.tensor(state, dtype = object)
-            prediction = self.model(state0)
-            column = torch.argmax(prediction).item()
-        return column
+            print('actioning')
+            #state0 = torch.tensor(state, dtype = torch.int32)
+            # print('State:')
+            # print(state)
+            # print('Player:')
+            # print(player)
+            # print('Input:')
+            input = np.insert(state, 0, player)
+            # print('Input')
+            input = torch.tensor(input, dtype=torch.float)
+            prediction = self.model(input)
+            action = torch.argmax(prediction).item()
+        return action
             
     
 
-def train():
+def train(max_games=10):
+    print('Training\n\n')
     plot_scores = []
     plot_avg_scores = []
     total_score = 0
@@ -60,39 +75,44 @@ def train():
     agent = Agent()
     board = Gameboard()
     n = 0
-    while True():
+    while (agent.n_games<max_games):
+        print('Turn:')
+        print(n)
+        print(board.grid)
         #get old state
         if n % 2 == 0:
-            player = 'red'
+            player = 1
         else:
-            player = 'yellow'
+            player = 2
         state_old = agent.get_state(board)
-        column = agent.get_action(player, state)
+        action = agent.get_action(player, state_old)
         
         #perform move and get new state
-        reward, done, winner = board.turn(player, column)
-        state_new = agent.get_state(game)
+        reward, done, winner = board.turn(player, action)
+        state_new = agent.get_state(board)
+
         
-        #train short
-        agent.train_short(player, state_old, final_move, state_new, done)
-        
-        agent.remember(player, state_old, final_move, state_new, done)
-        
+        # #train short
+        agent.train_short(player, state_old, action, reward, state_new, done)
+        agent.remember(player, state_old, action, reward, state_new, done)#self, player, state, action, reward, next_state, done
+        input = np.insert(board.grid, 0, player)
+        print(input)
         if done:
-            #train long memory
+        #     #train long memory
             board.reset()
             agent.n_games += 1
-            agent.train_long_memory()
+            print('Game:')
+            print(agent.n_games)
+        #     agent.train_long(player)
             
-            if n%25 == 0:
-                agent.model.save()y
+        #     if n%25 == 0:
+        #         agent.model.save()
             
             print('Game', agent.n_games, 'Winner', winner)
             
             #TODO plot
         
         n += 1
-
-if __name__ == 'train':
-    train()
-    
+print('Running\n')
+if __name__ == '__main__':
+    train() 
