@@ -1,0 +1,58 @@
+import torch
+import random as rand
+import numpy as np
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from collections import deque
+from gameboard import Gameboard
+from model import QNet, QTrainer
+import time
+
+input_size = 43
+hidden_size1 =64
+hidden_size2 = 64
+output_size =7
+
+board = Gameboard()
+model =QNet(input_size, hidden_size1, hidden_size2, output_size)
+model.load('model.pth')
+
+
+print(board)
+player_wins = 0
+bot_wins = 0
+while(True):
+    board.reset()
+    move = 1
+    bot_last_move = 'None'
+    player = int(input('Player 1 or 2: '))
+    bot_player = 3 - player 
+    while(board.is_done() == False):
+        if move % 2 == player:
+            print(board)
+            print(f'Bot Move: {bot_last_move}')
+            print('Player Turn')
+            action = int(input('Column: ')) - 1
+            board.turn(player, action)
+        else:
+            grid_flattened = board.get_state()
+            state = np.insert(grid_flattened, 0, player)#get state
+            
+            state = torch.tensor(state, dtype=torch.float32)
+            prediction = model(state)
+            action = torch.argmax(prediction).item()#getting action
+            bot_last_move = str(action + 1)
+            board.turn(bot_player, action)
+        move += 1
+    print('\nGame Over   Winner: Player ' + str(board.winner))
+    if board.winner == player:
+        player_wins += 1
+    else:
+        bot_wins += 1
+    print(f'Player Wins: {player_wins} Bot Wins: {bot_wins}')
+    play_again = input('Play Again? y/n  ')
+    if play_again == 'n':
+        break
+    
+print('Thank you for playing!')

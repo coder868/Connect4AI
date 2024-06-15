@@ -25,6 +25,12 @@ class QNet(nn.Module):
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
         
+    def load(self, file_name='model.pth'):
+        model_folder_path = './model'
+        file_path = os.path.join(model_folder_path, file_name)
+        self.load_state_dict(torch.load(file_path))
+        self.eval()  # Set the model to evaluation mode
+        
         
         
 class QTrainer:
