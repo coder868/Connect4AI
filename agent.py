@@ -38,8 +38,8 @@ class Agent:
             mini_sample = rand.sample(self.memory, BATCH_SIZE) #returns list of tuples
         else:
             mini_sample = self.memory
-        players, states, actions, rewards, next_states, dones = zip(*mini_sample)
-        self.trainer.train_step(players, states, actions, rewards, next_states, dones)
+        states, actions, rewards, next_states, dones = zip(*mini_sample)
+        self.trainer.train_step(states, actions, rewards, next_states, dones)
             
     
     def train_short(self, state, action, reward, next_state, done):
@@ -47,12 +47,11 @@ class Agent:
     
     def get_action(self, state):
         #random moves sometimes
-        self.epsilon = self.epsilon * 0.995
+        self.epsilon = max(self.epsilon * 0.995, 0.01)
         if rand.random() < self.epsilon:
             action = rand.randint(0,6)
             return action
         else:
-            print('actioning')
             #state0 = torch.tensor(state, dtype = torch.int32)
             # print('State:')
             # print(state)
@@ -63,10 +62,17 @@ class Agent:
             prediction = self.model(state)
             action = torch.argmax(prediction).item()
         return action
+    
+    def get_valid_action(self, board, state):
+        while True:
+            action = self.get_action(state)
+            if board.is_valid_action(action):
+                return action
+
             
     
 
-def train(max_games=10):
+def train(max_games=100):
     print('Training\n\n')
     plot_scores = []
     plot_avg_scores = []
@@ -83,33 +89,37 @@ def train(max_games=10):
             player = 2
         state_old = agent.get_state(board, player)
         
-        action = agent.get_action(state_old)
+        action = agent.get_valid_action(board, state_old)
         
     #     #perform move and get new state
         reward, done, winner = board.turn(player, action)
         player_new = 3-player
-        state_new = agent.get_state(board, player)
+        state_new = agent.get_state(board, player_new)
 
         
     #     # #train short
         agent.train_short(state_old, action, reward, state_new, done)
         agent.remember(state_old, action, reward, state_new, done)#self, player, state, action, reward, next_state, done
-    #     if done:
+        if done:
     #     #     #train long memory
     #         print(board.grid)
-    #         print('Game', agent.n_games, 'Winner', winner, 'wincon', board.wincon)
-    #         board.reset()
-    #         agent.n_games += 1
-    #         agent.train_long()
+            print('Game', agent.n_games, 'Winner', winner, 'wincon', board.wincon)
+            print(board)
+            print('\n')
+            board.reset()
+            agent.n_games += 1
+            agent.train_long()
             
-    #     #     if agent.n_games%25 == 0:
-    #     #         agent.model.save()
+            if agent.n_games%25 == 0:
+                agent.model.save()
             
     #         #TODO plot
         
-        print(action)
+        
         n += 1
+        
+    print('Training Completed\n')
         
 if __name__ == '__main__':
     print('Running\n')
-    train()
+    train(100)

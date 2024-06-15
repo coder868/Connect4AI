@@ -30,6 +30,12 @@ class Gameboard:
             return self.yellow_score - self.red_score
         else:
             return 0
+        
+        
+    def is_valid_action(self, action):
+        # Check if the top row of the selected column is empty
+        return self.grid[0][action] == 0
+
 
     def turn(self, player, column):
         # Drop piece
