@@ -103,15 +103,18 @@ def train(max_games=100):
         if done:
     #     #     #train long memory
     #         print(board.grid)
-            print('Game', agent.n_games, 'Winner', winner, 'wincon', board.wincon)
-            print(board)
-            print('\n')
+            # print('Game', agent.n_games, 'Winner', winner, 'wincon', board.wincon)
+            # print(board)
+            # print('\n')
             board.reset()
             agent.n_games += 1
             agent.train_long()
             
             if agent.n_games%25 == 0:
                 agent.model.save()
+                
+            if agent.n_games%100==0:
+                print(agent.n_games)
             
     #         #TODO plot
         
@@ -122,4 +125,4 @@ def train(max_games=100):
         
 if __name__ == '__main__':
     print('Running\n')
-    train(100)
+    train(10)
