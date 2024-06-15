@@ -12,7 +12,7 @@ class Gameboard:
         self.turns_played = 0
         self.done = False
         self.winner = None
-        self.wincon
+        self.wincon = 'none'
 
     def __str__(self):
         return str(self.grid)
@@ -33,6 +33,7 @@ class Gameboard:
 
     def turn(self, player, column):
         # Drop piece
+        self.turns_played += 1
         if player == 1:
             piece = 1
         else:
@@ -53,7 +54,7 @@ class Gameboard:
         
         self.red_score = 10*(red_vert + red_hort + red_sw + red_se) + self.score_count(1)
         self.yellow_score = 10*(yellow_vert + yellow_hort + yellow_sw + yellow_se) + self.score_count(2)
-        if np.count_nonzero(self.grid==0) == 0:
+        if self.turns_played>=42:
             self.done = True
             self.wincon = 'draw'
         return self.get_score(player), self.done, self.winner

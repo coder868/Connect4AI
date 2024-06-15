@@ -6,8 +6,7 @@ class Gameboard:
         self.p1 = p1
         self.p1id = p1id
         self.p2 = p2
-        self.p2id = p2id
-    
+        self.p2id = p2id    
     def __str__(self):
         string = ''
         for row in range(6):
