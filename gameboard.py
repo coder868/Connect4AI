@@ -15,7 +15,13 @@ class Gameboard:
         self.wincon = 'none'
 
     def __str__(self):
-        return str(self.grid)
+        string = ''
+        for row in range(6):
+            string += '\n| '
+            for column in range(7):
+                string += str(self.grid[row][column]) + ' '
+            string += '|'
+        return string
         
     def get_state(self):
         return self.grid.reshape(-1)
@@ -158,6 +164,9 @@ class Gameboard:
     def score_count(self, piece):
         count = np.count_nonzero(self.grid == piece)
         return count
+    
+    def is_done(self):
+        return self.done
 # # Create an instance of Gameboard
 # board = Gameboard()
 
