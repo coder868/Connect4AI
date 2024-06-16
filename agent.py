@@ -10,9 +10,11 @@ from model import QNet, QTrainer
 import time
 
 
-MAX_MEMORY = 1000
-BATCH_SIZE = 10
-LR = 0.01
+MAX_MEMORY = 5000
+BATCH_SIZE = 64
+LR = 0.001
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Agent:
     def __init__(self):
@@ -20,7 +22,7 @@ class Agent:
         self.epsilon = 1.0
         self.gamma = 0.95
         self.memory = deque(maxlen = MAX_MEMORY) #pop_left if too many
-        self.model = QNet(43, 64, 64, 7) #TODO
+        self.model = QNet(43, 64, 64, 7).to(device) #TODO
         self.trainer = QTrainer(self.model, lr=LR, gamma = self.gamma) #TODO
         #TODO model and trainer
     
@@ -47,7 +49,7 @@ class Agent:
     
     def get_action(self, state):
         #random moves sometimes
-        self.epsilon = max(self.epsilon * 0.995, 0.01)
+        self.epsilon = max(self.epsilon * 0.999, 0.1)#0.999, 0.1?
         if rand.random() < self.epsilon:
             action = rand.randint(0,6)
             return action
@@ -58,7 +60,7 @@ class Agent:
             # print('Player:')
             # print(player)
             # print('Input:')
-            state = torch.tensor(state, dtype=torch.float32)
+            state = torch.tensor(state, dtype=torch.float32).to(device)
             prediction = self.model(state)
             action = torch.argmax(prediction).item()
         return action
@@ -81,6 +83,7 @@ def train(max_games=100):
     agent = Agent()
     board = Gameboard()
     n = 0
+    firsts = 0
     while (agent.n_games<max_games):
         #get old state
         if n % 2 == 0:
@@ -90,7 +93,8 @@ def train(max_games=100):
         state_old = agent.get_state(board, player)
         
         action = agent.get_valid_action(board, state_old)
-        
+        if agent.get_action(state_old) == 0:
+            firsts += 1
     #     #perform move and get new state
         reward, done, winner = board.turn(player, action)
         player_new = 3-player
@@ -103,9 +107,15 @@ def train(max_games=100):
         if done:
     #     #     #train long memory
     #         print(board.grid)
-            # print('Game', agent.n_games, 'Winner', winner, 'wincon', board.wincon)
+            #print('Game', agent.n_games, 'Winner', winner, 'wincon', board.wincon)
             # print(board)
             # print('\n')
+            if agent.n_games%100==0:
+                print(board)
+                print(f'Game: {agent.n_games}')
+                print(firsts)
+                print(agent.epsilon)
+            firsts = 0
             board.reset()
             agent.n_games += 1
             agent.train_long()
@@ -113,16 +123,17 @@ def train(max_games=100):
             if agent.n_games%25 == 0:
                 agent.model.save()
                 
-            if agent.n_games%100==0:
-                print(agent.n_games)
+            
             
     #         #TODO plot
         
         
         n += 1
         
+        
+                
     print('Training Completed\n')
         
 if __name__ == '__main__':
     print('Running\n')
-    train(10)
+    train(70000)
