@@ -10,10 +10,11 @@ from model import QNet, QTrainer
 import time
 
 
-MAX_MEMORY = 5000
+MAX_MEMORY = 4000
 BATCH_SIZE = 64
 LR = 0.001
 
+torch.cuda.empty_cache()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Agent:
@@ -49,7 +50,8 @@ class Agent:
     
     def get_action(self, state):
         #random moves sometimes
-        self.epsilon = max(self.epsilon * 0.999, 0.1)#0.999, 0.1?
+        self.epsilon = max(self.epsilon * 0.99999, 0.2)#0.999, 0.1?
+        
         if rand.random() < self.epsilon:
             action = rand.randint(0,6)
             return action
@@ -84,15 +86,21 @@ def train(max_games=100):
     board = Gameboard()
     n = 0
     firsts = 0
+    stacker = 1
+    
     while (agent.n_games<max_games):
         #get old state
-        if n % 2 == 0:
+        n += 1
+        if n % 2 == 1:
             player = 1
         else:
             player = 2
-        state_old = agent.get_state(board, player)
         
-        action = agent.get_valid_action(board, state_old)
+        state_old = agent.get_state(board, player)
+        if agent.n_games % 25 == 24 and player == stacker:
+            action = agent.n_games % 7
+        else:
+            action = agent.get_action(state_old)
         if agent.get_action(state_old) == 0:
             firsts += 1
     #     #perform move and get new state
@@ -112,11 +120,13 @@ def train(max_games=100):
             # print('\n')
             if agent.n_games%100==0:
                 print(board)
-                print(f'Game: {agent.n_games}')
-                print(firsts)
+                print(f'Game {agent.n_games}')
                 print(agent.epsilon)
+                print(stacker)
             firsts = 0
+            stacker = 3 - stacker
             board.reset()
+            n = 0
             agent.n_games += 1
             agent.train_long()
             
@@ -128,7 +138,6 @@ def train(max_games=100):
     #         #TODO plot
         
         
-        n += 1
         
         
                 
@@ -136,4 +145,4 @@ def train(max_games=100):
         
 if __name__ == '__main__':
     print('Running\n')
-    train(70000)
+    train(70010)

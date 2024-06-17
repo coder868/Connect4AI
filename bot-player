@@ -47,6 +47,8 @@ while(True):
             bot_last_move = str(action + 1)
             board.turn(bot_player, action)
         move += 1
+    
+    print(board)
     print('\nGame Over   Winner: Player ' + str(board.winner))
     if board.winner == player:
         player_wins += 1

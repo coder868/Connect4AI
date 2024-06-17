@@ -9,12 +9,16 @@ class QNet(nn.Module):
     def __init__(self, input_size, hidden_size1, hidden_size2, output_size):
         super().__init__()
         self.linear1 = nn.Linear(input_size, hidden_size1)
+        self.dropout1 = nn.Dropout(0.2)
         self.linear2 = nn.Linear(hidden_size1, hidden_size2)
+        self.dropout2 = nn.Dropout(0.2)
         self.linear3 = nn.Linear(hidden_size2, output_size)
     
     def forward(self, x):
         x = F.relu(self.linear1(x))
+        x = self.dropout1(x)
         x = F.relu(self.linear2(x))
+        x = self.dropout2(x)
         x = F.relu(self.linear3(x))
         return x
         
@@ -38,16 +42,18 @@ class QTrainer:
         self.model = model
         self.lr = lr
         self.gamma = gamma
-        self.optimizer = optim.Adam(model.parameters(), lr = self.lr, )
+        self.optimizer = optim.Adam(model.parameters(), lr = self.lr, weight_decay=1e-41 )
         self.criterion = nn.MSELoss()
         
     def train_step(self, state, action, reward, next_state, done):#
         
-        state = torch.tensor(np.array(state), dtype=torch.float32)
-        action = torch.tensor(np.array(action), dtype=torch.long)
-        reward = torch.tensor(np.array(reward), dtype=torch.float32)
-        next_state = torch.tensor(np.array(next_state), dtype=torch.float32)
-        done = torch.tensor(np.array(done), dtype = bool)
+        device = next(self.model.parameters()).device
+        
+        state = torch.tensor(np.array(state), dtype=torch.float32).to(device)
+        action = torch.tensor(np.array(action), dtype=torch.long).to(device)
+        reward = torch.tensor(np.array(reward), dtype=torch.float32).to(device)
+        next_state = torch.tensor(np.array(next_state), dtype=torch.float32).to(device)
+        done = torch.tensor(np.array(done), dtype = bool).to(device)
         
         if len(state.shape) == 1:
             state = torch.unsqueeze(state,0)
