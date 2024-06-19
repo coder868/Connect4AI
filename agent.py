@@ -13,6 +13,7 @@ import time
 MAX_MEMORY = 4000
 BATCH_SIZE = 64
 LR = 0.001
+N_STEP = 3
 
 torch.cuda.empty_cache()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -23,6 +24,7 @@ class Agent:
         self.epsilon = 1.0
         self.gamma = 0.95
         self.memory = deque(maxlen = MAX_MEMORY) #pop_left if too many
+        self.n_step_buffer = deque(maxlen = N_STEP)
         self.model = QNet(43, 64, 64, 7).to(device) #TODO
         self.trainer = QTrainer(self.model, lr=LR, gamma = self.gamma) #TODO
         #TODO model and trainer
@@ -34,7 +36,12 @@ class Agent:
         
     
     def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done)) #pop left if MAX_MEMORY is reached
+        self.n_step_buffer.append((state, action, reward, next_state, done))
+        if len(self.n_step_buffer) == N_STEP:
+            state, action, _, _, _ = self.n_step_buffer[0]
+            reward = sum([(-(-self.gamma)**i) * self.n_step_buffer[i][2] for i in range(N_STEP)])
+            next_state, done = self.n_step_buffer[-1][3], self.n_step_buffer[-1][4]
+            self.memory.append((state, action, reward, next_state, done)) #pop left if MAX_MEMORY is reached
     
     def train_long(self):
         if len(self.memory) > BATCH_SIZE:
@@ -97,13 +104,14 @@ def train(max_games=100):
             player = 2
         
         state_old = agent.get_state(board, player)
-        if agent.n_games % 25 == 24 and player == stacker:
-            action = agent.n_games % 7
-        else:
-            action = agent.get_action(state_old)
-        if agent.get_action(state_old) == 0:
-            firsts += 1
+        # if agent.n_games % 25 == 24 and player == stacker:
+        #     action = agent.n_games % 7
+        # else:
+        #     action = agent.get_action(state_old)
+        # if agent.get_action(state_old) == 0:
+        #     firsts += 1
     #     #perform move and get new state
+        action = agent.get_valid_action(board, state_old)
         reward, done, winner = board.turn(player, action)
         player_new = 3-player
         state_new = agent.get_state(board, player_new)
@@ -122,10 +130,11 @@ def train(max_games=100):
                 print(board)
                 print(f'Game {agent.n_games}')
                 print(agent.epsilon)
-                print(stacker)
-            firsts = 0
-            stacker = 3 - stacker
+                # print(stacker)
+            # firsts = 0
+            # stacker = 3 - stacker
             board.reset()
+            agent.n_step_buffer.clear()
             n = 0
             agent.n_games += 1
             agent.train_long()
@@ -145,4 +154,4 @@ def train(max_games=100):
         
 if __name__ == '__main__':
     print('Running\n')
-    train(70010)
+    train(1000)
