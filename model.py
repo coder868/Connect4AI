@@ -23,13 +23,13 @@ class QNet(nn.Module):
         return x
         
     def save(self, file_name = 'model.pth'):
-        model_folder_path = './model'
+        model_folder_path = './models'
         if not os.path.exists(model_folder_path):
             os.makedirs(model_folder_path)
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
         
-    def load(self, file_name='model.pth'):
+    def load(self, file_name='4_step_model.pth'):
         model_folder_path = './model'
         file_path = os.path.join(model_folder_path, file_name)
         self.load_state_dict(torch.load(file_path))

@@ -28,7 +28,7 @@ while(True):
     board.reset()
     move = 1
     bot_last_move = 'None'
-    player = int(input('Player 1 or 2: '))
+    player = int(input('Player 1 or 2: '1))
     bot_player = 3 - player 
     while(board.is_done() == False):
         if move % 2 == player % 2:
